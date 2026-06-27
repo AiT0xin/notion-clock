@@ -40,8 +40,8 @@
     width: 118px;
     height: 144px;
     border-radius: 16px;
-    background: linear-gradient(#efeeec 0 50%, #dcdad7 50% 100%);
-    box-shadow: 0 10px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.6);
+    background: linear-gradient(#2e2d2b 0 50%, #232220 50% 100%);
+    box-shadow: 0 10px 28px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.06);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -53,33 +53,28 @@
     left: 0; right: 0; top: 50%;
     height: 2px;
     transform: translateY(-1px);
-    background: rgba(0,0,0,.14);
+    background: rgba(0,0,0,.5);
   }
   .card span {
     font-size: 92px;
-    font-weight: 600;
-    color: #29282b;
+    font-weight: 700;
+    font-family: Georgia, "Times New Roman", serif;
+    color: #f0eeeb;
     line-height: 1;
     letter-spacing: -1px;
     font-variant-numeric: tabular-nums;
   }
 
-  /* ---- blinking colon ---- */
+  /* ---- static colon ---- */
   .colon {
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
-    padding: 0 4px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 80px;
+    font-weight: 700;
+    color: #f1efec;
+    line-height: 1;
+    padding: 0 2px;
+    margin-bottom: 8px;
   }
-  .colon b {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #f1efec;
-    display: block;
-    transition: opacity .15s ease;
-  }
-  .colon.off b { opacity: .18; }
 
   /* ---- +08 tag ---- */
   .tz {
@@ -137,7 +132,7 @@
   <div class="wrap">
     <div class="clock">
       <div class="card"><span id="hh">10</span></div>
-      <div class="colon" id="colon"><b></b><b></b></div>
+      <div class="colon">:</div>
       <div class="card">
         <span id="mm">28</span>
         <div class="tz" id="tz">+08</div>
@@ -240,8 +235,6 @@
       WEEK[t.getUTCDay()] + " | " + MON[t.getUTCMonth()] + " " +
       t.getUTCDate() + ", " + t.getUTCFullYear();
 
-    // blink colon each second
-    document.getElementById("colon").classList.toggle("off", t.getUTCSeconds() % 2 === 1);
   }
 
   function parseTimeApi(d){
