@@ -6,7 +6,261 @@
 <title>Clock</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Clock</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
+    height: 100%;
+    background: #1b1a19;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  /* outer shell — fills the iframe, centers the inner block */
+  .wrap {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+
+  /* inner block rendered at a fixed design width; JS scales it down to fit */
+  .inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    transform-origin: center center;
+  }
+
+  /* ---- clock row ---- */
+  .clock {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .card {
+    position: relative;
+    width: 118px;
+    height: 144px;
+    border-radius: 16px;
+    background: #2a2927;
+    box-shadow: 0 10px 28px rgba(0,0,0,.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: 50%;
+    height: 2px;
+    transform: translateY(-1px);
+    background: rgba(0,0,0,.5);
+  }
+  .card span {
+    font-size: 92px;
+    font-weight: 700;
+    font-family: Georgia, "Times New Roman", serif;
+    color: #f0eeeb;
+    line-height: 1;
+    letter-spacing: -1px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- static colon ---- */
+  .colon {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 80px;
+    font-weight: 700;
+    color: #f1efec;
+    line-height: 1;
+    padding: 0 2px;
+    margin-bottom: 8px;
+  }
+
+  /* ---- date line ---- */
+  .date {
+    font-family: Georgia, "Times New Roman", serif;
+    color: #f3f1ee;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: .3px;
+  }
+
+  /* ---- timezone switcher ---- */
+  .zones {
+    display: flex;
+    gap: 8px;
+  }
+  .zones button {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.18);
+    color: #b9b7b3;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .zones button:hover { border-color: rgba(255,255,255,.45); color: #f1efec; }
+  .zones button.active {
+    background: #f1efec;
+    color: #1b1a19;
+    border-color: #f1efec;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="inner" id="inner">
+      <div class="clock">
+        <div class="card"><span id="hh">10</span></div>
+        <div class="colon">:</div>
+        <div class="card"><span id="mm">28</span></div>
+      </div>
+      <div class="date" id="date">Saturday | June 27, 2026</div>
+      <div class="zones" id="zones">
+        <button data-off="8">+08</button>
+        <button data-off="10">+10</button>
+        <button data-off="0">UTC</button>
+        <button data-off="-4">&minus;04</button>
+        <button data-gmt="true">GMT</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  var WEEK = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var MON  = ["January","February","March","April","May","June","July",
+              "August","September","October","November","December"];
+
+  var DESIGN_W = 340;
+
+  function rescale() {
+    var s = Math.min(window.innerWidth / DESIGN_W, 1);
+    document.getElementById('inner').style.zoom = s;
+  }
+  window.addEventListener('resize', rescale);
+  rescale();
+
+  // ---- atomic time sync ----
+  var SYNC_EVERY = 5 * 60 * 1000;
+  var driftMs = 0;
+  function nowUTC() { return Date.now() + driftMs; }
+
+  function parseTimeApi(d) {
+    if (d && d.year) return Date.UTC(d.year, d.month - 1, d.day, d.hour, d.minute, d.seconds, d.milliSeconds || 0);
+    return NaN;
+  }
+  async function syncOnce() {
+    var sources = [
+      { url: 'https://timeapi.io/api/Time/current/zone?timeZone=UTC', parse: parseTimeApi },
+      { url: 'https://worldtimeapi.org/api/timezone/Etc/UTC',
+        parse: function(d) { return d && d.unixtime ? d.unixtime * 1000 : NaN; } }
+    ];
+    for (var i = 0; i < sources.length; i++) {
+      try {
+        var t0 = Date.now();
+        var res = await fetch(sources[i].url, { cache: 'no-store' });
+        var t1 = Date.now();
+        if (!res.ok) continue;
+        var data = await res.json();
+        var serverMs = sources[i].parse(data);
+        if (!serverMs || isNaN(serverMs)) continue;
+        driftMs = (serverMs + (t1 - t0) / 2) - t1;
+        return true;
+      } catch (e) {}
+    }
+    return false;
+  }
+  syncOnce();
+  setInterval(syncOnce, SYNC_EVERY);
+  document.addEventListener('visibilitychange', function() { if (!document.hidden) syncOnce(); });
+
+  // ---- timezone ----
+  function ukOffset() {
+    var now = new Date(), yr = now.getUTCFullYear();
+    function lastSun(m) {
+      var d = new Date(Date.UTC(yr, m + 1, 0));
+      d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+      return d;
+    }
+    var s = lastSun(2); s.setUTCHours(1);
+    var e = lastSun(9); e.setUTCHours(1);
+    return (now >= s && now < e) ? 1 : 0;
+  }
+
+  var useGMT = false;
+  var currentOffset = (function() {
+    var saved; try { saved = localStorage.getItem('clockOffset'); } catch (e) {}
+    if (saved === 'gmt') { useGMT = true; return ukOffset(); }
+    var n = parseFloat(saved);
+    return isNaN(n) ? 8 : n;
+  })();
+
+  function offset() { return useGMT ? ukOffset() : currentOffset; }
+
+  function updatePills(activeBtn) {
+    var btns = document.querySelectorAll('#zones button');
+    for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+    if (activeBtn) activeBtn.classList.add('active');
+  }
+
+  // ---- tick ----
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+  function tick() {
+    var off = offset();
+    var t = new Date(nowUTC() + off * 3600000);
+    document.getElementById('hh').textContent = pad(t.getUTCHours());
+    document.getElementById('mm').textContent = pad(t.getUTCMinutes());
+
+    document.getElementById('date').textContent =
+      WEEK[t.getUTCDay()] + ' | ' + MON[t.getUTCMonth()] + ' ' +
+      t.getUTCDate() + ', ' + t.getUTCFullYear();
+  }
+
+  // ---- wire pills ----
+  var zoneBtns = document.querySelectorAll('#zones button');
+  for (var b = 0; b < zoneBtns.length; b++) {
+    zoneBtns[b].addEventListener('click', function() {
+      if (this.getAttribute('data-gmt')) {
+        useGMT = true;
+        try { localStorage.setItem('clockOffset', 'gmt'); } catch (e) {}
+        updatePills(this);
+      } else {
+        useGMT = false;
+        currentOffset = parseFloat(this.getAttribute('data-off'));
+        try { localStorage.setItem('clockOffset', currentOffset); } catch (e) {}
+        updatePills(this);
+      }
+      tick();
+    });
+  }
+
+  // restore active pill
+  if (useGMT) {
+    updatePills(document.querySelector('#zones button[data-gmt]'));
+  } else {
+    updatePills(document.querySelector('#zones button[data-off="' + currentOffset + '"]'));
+  }
+
+  tick();
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>
+
     height: 100%;
     background: #1b1a19;
     font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
