@@ -5,48 +5,51 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Clock</title>
 <style>
-  :root {
-    /* Timezone offset in hours. +8 = Singapore / Asia (GMT+8). Change if needed. */
-    --tz-offset: 8;
-  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
     height: 100%;
-    background: #1b1a19;            /* dark, slightly warm — blends with Notion dark mode */
+    background: #1b1a19;
     font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow: hidden;
   }
+
+  /* outer shell — fills the iframe, centers the inner block */
   .wrap {
     height: 100%;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 22px;
     user-select: none;
+  }
+
+  /* inner block rendered at a fixed design width; JS scales it down to fit */
+  .inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    transform-origin: center center;
   }
 
   /* ---- clock row ---- */
   .clock {
     display: flex;
     align-items: center;
-    gap: clamp(8px, 3vw, 14px);
-    position: relative;
+    gap: 14px;
   }
 
   .card {
     position: relative;
-    width: clamp(72px, 26vw, 118px);
-    height: clamp(88px, 32vw, 144px);
-    border-radius: clamp(10px, 3vw, 16px);
+    width: 118px;
+    height: 144px;
+    border-radius: 16px;
     background: #2a2927;
-    box-shadow: 0 10px 28px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.06);
+    box-shadow: 0 10px 28px rgba(0,0,0,.6);
     display: flex;
     align-items: center;
     justify-content: center;
   }
-  /* the flip-clock seam across the middle */
   .card::after {
     content: "";
     position: absolute;
@@ -56,7 +59,7 @@
     background: rgba(0,0,0,.5);
   }
   .card span {
-    font-size: clamp(56px, 20vw, 92px);
+    font-size: 92px;
     font-weight: 700;
     font-family: Georgia, "Times New Roman", serif;
     color: #f0eeeb;
@@ -68,7 +71,7 @@
   /* ---- static colon ---- */
   .colon {
     font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(48px, 17vw, 80px);
+    font-size: 80px;
     font-weight: 700;
     color: #f1efec;
     line-height: 1;
@@ -76,23 +79,11 @@
     margin-bottom: 8px;
   }
 
-  /* ---- +08 tag ---- */
-  .tz {
-    position: absolute;
-    right: clamp(-28px, -6vw, -20px);
-    bottom: 6px;
-    color: #f1efec;
-    font-size: clamp(11px, 3vw, 15px);
-    font-weight: 500;
-    letter-spacing: .3px;
-    white-space: nowrap;
-  }
-
   /* ---- date line ---- */
   .date {
     font-family: Georgia, "Times New Roman", serif;
     color: #f3f1ee;
-    font-size: clamp(13px, 4vw, 20px);
+    font-size: 20px;
     font-weight: 700;
     letter-spacing: .3px;
   }
@@ -101,7 +92,6 @@
   .zones {
     display: flex;
     gap: 8px;
-    margin-top: 4px;
   }
   .zones button {
     background: transparent;
@@ -112,7 +102,7 @@
     padding: 6px 14px;
     border-radius: 999px;
     cursor: pointer;
-    transition: background .15s ease, color .15s ease, border-color .15s ease;
+    transition: background .15s, color .15s, border-color .15s;
   }
   .zones button:hover { border-color: rgba(255,255,255,.45); color: #f1efec; }
   .zones button.active {
@@ -120,33 +110,24 @@
     color: #1b1a19;
     border-color: #f1efec;
   }
-
-  @media (max-width: 380px) {
-    .card { width: 92px; height: 116px; }
-    .card span { font-size: 72px; }
-    .tz { right: -30px; font-size: 13px; }
-    .date { font-size: 17px; }
-  }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="clock">
-      <div class="card"><span id="hh">10</span></div>
-      <div class="colon">:</div>
-      <div class="card">
-        <span id="mm">28</span>
-        <div class="tz" id="tz">+08</div>
+    <div class="inner" id="inner">
+      <div class="clock">
+        <div class="card"><span id="hh">10</span></div>
+        <div class="colon">:</div>
+        <div class="card"><span id="mm">28</span></div>
       </div>
-    </div>
-    <div class="date" id="date">Saturday | June 27, 2026</div>
-
-    <div class="zones" id="zones">
-      <button data-off="8">+08</button>
-      <button data-off="10">+10</button>
-      <button data-off="0" data-label="UTC">UTC</button>
-      <button data-off="-4">&minus;04</button>
-      <button data-gmt="true">GMT</button>
+      <div class="date" id="date">Saturday | June 27, 2026</div>
+      <div class="zones" id="zones">
+        <button data-off="8">+08</button>
+        <button data-off="10">+10</button>
+        <button data-off="0">UTC</button>
+        <button data-off="-4">&minus;04</button>
+        <button data-gmt="true">GMT</button>
+      </div>
     </div>
   </div>
 
@@ -155,101 +136,33 @@
   var MON  = ["January","February","March","April","May","June","July",
               "August","September","October","November","December"];
 
-  var SYNC_EVERY = 5 * 60 * 1000;  // re-sync with atomic time every 5 minutes
-  var driftMs = 0;                 // (true UTC now) − (this device's clock)
+  var DESIGN_W = 340;   // natural width of .inner at scale 1
+  var DESIGN_H = 320;   // natural height of .inner at scale 1
 
-  // true if the UK is currently on BST (last Sun Mar → last Sun Oct, UTC+1)
-  function ukOffset() {
-    var now = new Date();
-    var yr  = now.getUTCFullYear();
-    function lastSun(month) {
-      // find last Sunday of given UTC month (0-indexed)
-      var d = new Date(Date.UTC(yr, month + 1, 0)); // last day of month
-      d.setUTCDate(d.getUTCDate() - d.getUTCDay()); // back to Sunday
-      return d;
-    }
-    var bstStart = lastSun(2); bstStart.setUTCHours(1); // last Sun March 01:00 UTC
-    var bstEnd   = lastSun(9); bstEnd.setUTCHours(1);   // last Sun October 01:00 UTC
-    return (now >= bstStart && now < bstEnd) ? 1 : 0;   // BST=+1, GMT=+0
+  function rescale() {
+    var el = document.getElementById('inner');
+    var sw = window.innerWidth  / (DESIGN_W + 40);
+    var sh = window.innerHeight / (DESIGN_H + 40);
+    var s  = Math.min(sw, sh, 1);
+    el.style.transform = 'scale(' + s + ')';
   }
+  window.addEventListener('resize', rescale);
+  rescale();
 
-  var useGMT = false;  // true when the GMT pill is active
+  // ---- atomic time sync ----
+  var SYNC_EVERY = 5 * 60 * 1000;
+  var driftMs = 0;
+  function nowUTC() { return Date.now() + driftMs; }
 
-  // Selected timezone. Persisted as a number, or the string "gmt".
-  var currentOffset = (function(){
-    var saved;
-    try { saved = localStorage.getItem('clockOffset'); } catch (e) {}
-    if (saved === 'gmt') { useGMT = true; return ukOffset(); }
-    var n = parseFloat(saved);
-    if (!isNaN(n)) return n;
-    var css = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tz-offset'));
-    return isNaN(css) ? 8 : css;
-  })();
-
-  function offset() { return useGMT ? ukOffset() : currentOffset; }
-
-  function updatePills(activeBtn) {
-    var btns = document.querySelectorAll('#zones button');
-    for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
-    if (activeBtn) activeBtn.classList.add('active');
-  }
-
-  function setOffset(o, btn) {
-    useGMT = false;
-    currentOffset = o;
-    try { localStorage.setItem('clockOffset', o); } catch (e) {}
-    updatePills(btn);
-    tick();
-  }
-
-  function setGMT(btn) {
-    useGMT = true;
-    try { localStorage.setItem('clockOffset', 'gmt'); } catch (e) {}
-    updatePills(btn);
-    tick();
-  }
-
-  function pad(n){ return (n < 10 ? "0" : "") + n; }
-
-  // Corrected UTC milliseconds — device clock plus the measured drift.
-  function nowUTC(){ return Date.now() + driftMs; }
-
-  function tick() {
-    var off = offset();
-    // shift corrected UTC by the offset, then read the UTC fields back out
-    var t = new Date(nowUTC() + off * 3600000);
-
-    document.getElementById("hh").textContent = pad(t.getUTCHours());
-    document.getElementById("mm").textContent = pad(t.getUTCMinutes());
-
-    var label;
-    if (useGMT) {
-      label = (off === 0) ? "GMT" : "BST";
-    } else if (off === 0) {
-      label = "UTC";
-    } else {
-      label = (off > 0 ? "+" : "−") + pad(Math.abs(off));
-    }
-    document.getElementById("tz").textContent = label;
-
-    document.getElementById("date").textContent =
-      WEEK[t.getUTCDay()] + " | " + MON[t.getUTCMonth()] + " " +
-      t.getUTCDate() + ", " + t.getUTCFullYear();
-
-  }
-
-  function parseTimeApi(d){
+  function parseTimeApi(d) {
     if (d && d.year) return Date.UTC(d.year, d.month - 1, d.day, d.hour, d.minute, d.seconds, d.milliSeconds || 0);
     return NaN;
   }
-
-  // Fetch true UTC from a public atomic-time API and store the drift.
-  // Tries a backup source; on total failure it just keeps device time.
-  async function syncOnce(){
+  async function syncOnce() {
     var sources = [
       { url: 'https://timeapi.io/api/Time/current/zone?timeZone=UTC', parse: parseTimeApi },
       { url: 'https://worldtimeapi.org/api/timezone/Etc/UTC',
-        parse: function(d){ return d && d.unixtime ? d.unixtime * 1000 : NaN; } }
+        parse: function(d) { return d && d.unixtime ? d.unixtime * 1000 : NaN; } }
     ];
     for (var i = 0; i < sources.length; i++) {
       try {
@@ -260,41 +173,86 @@
         var data = await res.json();
         var serverMs = sources[i].parse(data);
         if (!serverMs || isNaN(serverMs)) continue;
-        // assume the server's timestamp is from roughly mid-flight
-        var latency = (t1 - t0) / 2;
-        driftMs = (serverMs + latency) - t1;
+        driftMs = (serverMs + (t1 - t0) / 2) - t1;
         return true;
-      } catch (e) { /* try the next source */ }
+      } catch (e) {}
     }
     return false;
   }
+  syncOnce();
+  setInterval(syncOnce, SYNC_EVERY);
+  document.addEventListener('visibilitychange', function() { if (!document.hidden) syncOnce(); });
 
-  // wire up the timezone pills, then highlight the active one
+  // ---- timezone ----
+  function ukOffset() {
+    var now = new Date(), yr = now.getUTCFullYear();
+    function lastSun(m) {
+      var d = new Date(Date.UTC(yr, m + 1, 0));
+      d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+      return d;
+    }
+    var s = lastSun(2); s.setUTCHours(1);
+    var e = lastSun(9); e.setUTCHours(1);
+    return (now >= s && now < e) ? 1 : 0;
+  }
+
+  var useGMT = false;
+  var currentOffset = (function() {
+    var saved; try { saved = localStorage.getItem('clockOffset'); } catch (e) {}
+    if (saved === 'gmt') { useGMT = true; return ukOffset(); }
+    var n = parseFloat(saved);
+    return isNaN(n) ? 8 : n;
+  })();
+
+  function offset() { return useGMT ? ukOffset() : currentOffset; }
+
+  function updatePills(activeBtn) {
+    var btns = document.querySelectorAll('#zones button');
+    for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+    if (activeBtn) activeBtn.classList.add('active');
+  }
+
+  // ---- tick ----
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+  function tick() {
+    var off = offset();
+    var t = new Date(nowUTC() + off * 3600000);
+    document.getElementById('hh').textContent = pad(t.getUTCHours());
+    document.getElementById('mm').textContent = pad(t.getUTCMinutes());
+
+    document.getElementById('date').textContent =
+      WEEK[t.getUTCDay()] + ' | ' + MON[t.getUTCMonth()] + ' ' +
+      t.getUTCDate() + ', ' + t.getUTCFullYear();
+  }
+
+  // ---- wire pills ----
   var zoneBtns = document.querySelectorAll('#zones button');
   for (var b = 0; b < zoneBtns.length; b++) {
-    zoneBtns[b].addEventListener('click', function(){
-      if (this.getAttribute('data-gmt')) { setGMT(this); }
-      else { setOffset(parseFloat(this.getAttribute('data-off')), this); }
+    zoneBtns[b].addEventListener('click', function() {
+      if (this.getAttribute('data-gmt')) {
+        useGMT = true;
+        try { localStorage.setItem('clockOffset', 'gmt'); } catch (e) {}
+        updatePills(this);
+      } else {
+        useGMT = false;
+        currentOffset = parseFloat(this.getAttribute('data-off'));
+        try { localStorage.setItem('clockOffset', currentOffset); } catch (e) {}
+        updatePills(this);
+      }
+      tick();
     });
   }
 
-  // restore the correct active pill on load
+  // restore active pill
   if (useGMT) {
-    var gmtBtn = document.querySelector('#zones button[data-gmt]');
-    updatePills(gmtBtn);
+    updatePills(document.querySelector('#zones button[data-gmt]'));
   } else {
-    var savedOff = currentOffset;
-    var matchBtn = document.querySelector('#zones button[data-off="' + savedOff + '"]');
-    updatePills(matchBtn);
+    updatePills(document.querySelector('#zones button[data-off="' + currentOffset + '"]'));
   }
 
   tick();
   setInterval(tick, 1000);
-
-  syncOnce();
-  setInterval(syncOnce, SYNC_EVERY);
-  // re-sync when the tab comes back into focus (background tabs drift)
-  document.addEventListener('visibilitychange', function(){ if (!document.hidden) syncOnce(); });
 </script>
 </body>
 </html>
