@@ -4,7 +4,526 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Clock</title><!DOCTYPE html>
+<html lang="en"><!DOCTYPE html>
 <html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Clock</title>
+</head>
+<body style="margin:0;padding:0;width:100%;height:100vh;background:#1b1a19;overflow:hidden;position:relative;">
+
+<div id="inner" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px;">
+
+  <div style="display:flex;align-items:center;gap:10px;">
+
+    <!-- Hours card -->
+    <div style="position:relative;width:136px;height:148px;border-radius:16px;background:#2a2927;box-shadow:0 8px 24px rgba(0,0,0,.55);overflow:hidden;flex-shrink:0;">
+      <!-- upper static: shows current digit top half -->
+      <div style="position:absolute;top:0;left:0;width:136px;height:74px;overflow:hidden;z-index:1;">
+        <span id="hh-u" style="position:absolute;top:0;left:0;width:136px;height:148px;display:flex;align-items:center;justify-content:center;font-size:112px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#f0eeeb;line-height:1;letter-spacing:-0.05em;font-variant-numeric:tabular-nums;"></span>
+      </div>
+      <!-- lower static: shows current digit bottom half -->
+      <div style="position:absolute;bottom:0;left:0;width:136px;height:74px;overflow:hidden;z-index:1;background:#252321;">
+        <span id="hh-l" style="position:absolute;top:-74px;left:0;width:136px;height:148px;display:flex;align-items:center;justify-content:center;font-size:112px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#f0eeeb;line-height:1;letter-spacing:-0.05em;font-variant-numeric:tabular-nums;"></span>
+      </div>
+      <!-- flap top: shows old digit top, folds downward -->
+      <div style="position:absolute;top:0;left:0;width:136px;height:74px;perspective:280px;z-index:3;pointer-events:none;">
+        <div id="hh-ft" style="position:relative;width:136px;height:74px;overflow:hidden;transform-origin:center bottom;transform:rotateX(0deg);background:#2a2927;">
+          <span id="hh-ft-t" style="position:absolute;top:0;left:0;width:136px;height:148px;display:flex;align-items:center;justify-content:center;font-size:112px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#f0eeeb;line-height:1;letter-spacing:-0.05em;font-variant-numeric:tabular-nums;"></span>
+          <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,0.22));pointer-events:none;"></div>
+        </div>
+      </div>
+      <!-- flap bottom: shows new digit bottom, unfolds upward -->
+      <div style="position:absolute;bottom:0;left:0;width:136px;height:74px;perspective:280px;z-index:3;pointer-events:none;">
+        <div id="hh-fb" style="position:relative;width:136px;height:74px;overflow:hidden;transform-origin:center top;transform:rotateX(90deg);background:#252321;">
+          <span id="hh-fb-t" style="position:absolute;top:-74px;left:0;width:136px;height:148px;display:flex;align-items:center;justify-content:center;font-size:112px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#f0eeeb;line-height:1;letter-spacing:-0.05em;font-variant-numeric:tabular-nums;"></span>
+          <div style="position:absolute;inset:0;background:linear-gradient(to top,transparent 40%,rgba(0,0,0,0.22));pointer-events:none;"></div>
+        </div>
+      </div>
+      <!-- center divider -->
+      <div style="position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:rgba(0,0,0,.65);pointer-events:none;z-index:10;"></div>
+    </div>
+
+    <div style="font-family:Georgia,'Times New Roman',serif;font-size:100px;font-weight:700;color:#f1efec;line-height:1;flex-shrink:0;margin-bottom:8px;">:</div>
+
+    <!-- Minutes card -->
+    <div style="position:relative;width:136px;height:148px;border-radius:16px;background:#2a2927;box-shadow:0 8px 24px rgba(0,0,0,.55);overflow:hidden;flex-shrink:0;">
+      <div style="position:absolute;top:0;left:0;width:136px;height:74px;overflow:hidden;z-index:1;">
+        <span id="mm-u" style="position:absolute;top:0;left:0;width:136px;height:148px;display:flex;align-items:center;justify-content:center;font-size:112px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#f0eeeb;line-height:1;letter-spacing:-0.05em;font-variant-numeric:tabular-nums;"></span>
+      </div>
+      <div style="position:absolute;bottom:0;left:0;width:136px;height:74px;overflow:hidden;z-index:1;background:#252321;">
+        <span id="mm-l" style="position:absolute;top:-74px;left:0;width:136px;height:148px;display:flex;align-items:center;justify-content:center;font-size:112px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#f0eeeb;line-height:1;letter-spacing:-0.05em;font-variant-numeric:tabular-nums;"></span>
+      </div>
+      <div style="position:absolute;top:0;left:0;width:136px;height:74px;perspective:280px;z-index:3;pointer-events:none;">
+        <div id="mm-ft" style="position:relative;width:136px;height:74px;overflow:hidden;transform-origin:center bottom;transform:rotateX(0deg);background:#2a2927;">
+          <span id="mm-ft-t" style="position:absolute;top:0;left:0;width:136px;height:148px;display:flex;align-items:center;justify-content:center;font-size:112px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#f0eeeb;line-height:1;letter-spacing:-0.05em;font-variant-numeric:tabular-nums;"></span>
+          <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,0.22));pointer-events:none;"></div>
+        </div>
+      </div>
+      <div style="position:absolute;bottom:0;left:0;width:136px;height:74px;perspective:280px;z-index:3;pointer-events:none;">
+        <div id="mm-fb" style="position:relative;width:136px;height:74px;overflow:hidden;transform-origin:center top;transform:rotateX(90deg);background:#252321;">
+          <span id="mm-fb-t" style="position:absolute;top:-74px;left:0;width:136px;height:148px;display:flex;align-items:center;justify-content:center;font-size:112px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#f0eeeb;line-height:1;letter-spacing:-0.05em;font-variant-numeric:tabular-nums;"></span>
+          <div style="position:absolute;inset:0;background:linear-gradient(to top,transparent 40%,rgba(0,0,0,0.22));pointer-events:none;"></div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:rgba(0,0,0,.65);pointer-events:none;z-index:10;"></div>
+    </div>
+
+  </div>
+
+  <div id="date" style="font-family:Georgia,'Times New Roman',serif;color:#f3f1ee;font-size:18px;font-weight:700;letter-spacing:.3px;white-space:nowrap;"></div>
+  <div id="zones" style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center;"></div>
+
+</div>
+
+<script>
+(function(){
+  // Inject flip keyframes
+  (function(){
+    var s = document.createElement('style');
+    s.textContent =
+      '@keyframes fTop{0%{transform:rotateX(0deg);filter:brightness(1)}100%{transform:rotateX(-90deg);filter:brightness(0.25)}}' +
+      '@keyframes fBot{0%{transform:rotateX(90deg);filter:brightness(0.25)}100%{transform:rotateX(0deg);filter:brightness(1)}}';
+    document.head.appendChild(s);
+  })();
+
+  var WEEK = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var MON  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  function rescale() {
+    var el = document.getElementById('inner');
+    el.style.transform = 'translate(-50%,-50%)';
+    var nw = el.offsetWidth, nh = el.offsetHeight;
+    if (!nw || !nh) return;
+    var pad = 24;
+    var s = Math.min((window.innerWidth - pad) / nw, (window.innerHeight - pad) / nh);
+    el.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+  window.addEventListener('resize', rescale);
+  requestAnimationFrame(function(){ requestAnimationFrame(rescale); });
+
+  var SYNC_EVERY = 5 * 60 * 1000;
+  var driftMs = 0;
+  function nowUTC() { return Date.now() + driftMs; }
+
+  function parseTimeApi(d) {
+    if (d && d.year) return Date.UTC(d.year, d.month-1, d.day, d.hour, d.minute, d.seconds, d.milliSeconds||0);
+    return NaN;
+  }
+  async function syncOnce() {
+    var sources = [
+      { url: 'https://timeapi.io/api/Time/current/zone?timeZone=UTC', parse: parseTimeApi },
+      { url: 'https://worldtimeapi.org/api/timezone/Etc/UTC', parse: function(d){ return d&&d.unixtime?d.unixtime*1000:NaN; } }
+    ];
+    for (var i = 0; i < sources.length; i++) {
+      try {
+        var t0 = Date.now(), res = await fetch(sources[i].url,{cache:'no-store'}), t1 = Date.now();
+        if (!res.ok) continue;
+        var data = await res.json(), ms = sources[i].parse(data);
+        if (!ms || isNaN(ms)) continue;
+        driftMs = (ms + (t1-t0)/2) - t1;
+        return;
+      } catch(e) {}
+    }
+  }
+  syncOnce();
+  setInterval(syncOnce, SYNC_EVERY);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) syncOnce(); });
+
+  function ukOffset() {
+    var now = new Date(), yr = now.getUTCFullYear();
+    function lastSun(m) { var d=new Date(Date.UTC(yr,m+1,0)); d.setUTCDate(d.getUTCDate()-d.getUTCDay()); return d; }
+    var s = lastSun(2); s.setUTCHours(1);
+    var e = lastSun(9); e.setUTCHours(1);
+    return (now >= s && now < e) ? 1 : 0;
+  }
+
+  var useGMT = false;
+  var currentOffset = 8;
+  var customActive = false;
+
+  (function(){
+    var saved; try { saved = localStorage.getItem('clockOffset'); } catch(e) {}
+    if (saved === 'gmt') { useGMT = true; currentOffset = ukOffset(); return; }
+    var n = parseFloat(saved);
+    if (!isNaN(n)) currentOffset = n;
+  })();
+
+  function offset() { return useGMT ? ukOffset() : currentOffset; }
+
+  var BTN  = 'background:transparent;border:1px solid rgba(255,255,255,.2);color:#b9b7b3;font-family:inherit;font-size:13px;padding:5px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;line-height:1.2;';
+  var BTNON= 'background:#f1efec;border:1px solid #f1efec;color:#1b1a19;font-family:inherit;font-size:13px;padding:5px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;line-height:1.2;';
+
+  var zones = [
+    { label:'−4',  off:-4,  gmt:false },
+    { label:'GMT', off:null, gmt:true  },
+    { label:'+8',  off:8,   gmt:false },
+    { label:'+10', off:10,  gmt:false },
+  ];
+  var btns = [];
+  var zonesEl = document.getElementById('zones');
+
+  function setActive(idx) {
+    btns.forEach(function(x){ x.style.cssText = BTN; });
+    if (idx >= 0 && idx < btns.length) btns[idx].style.cssText = BTNON;
+  }
+
+  var gmtBtn = null;
+  zones.forEach(function(z, i){
+    var b = document.createElement('button');
+    b.style.cssText = BTN;
+    if (z.gmt) {
+      gmtBtn = b;
+      var wrap = document.createElement('span');
+      wrap.style.cssText = 'display:inline-flex;flex-direction:column;align-items:center;gap:0;';
+      var main = document.createElement('span');
+      main.textContent = 'GMT';
+      var dst = document.createElement('span');
+      dst.id = 'dst-lbl';
+      dst.style.cssText = 'font-size:8px;opacity:0.65;letter-spacing:0.3px;display:block;height:9px;';
+      dst.textContent = ukOffset() === 1 ? 'BST +1' : '';
+      wrap.appendChild(main);
+      wrap.appendChild(dst);
+      b.appendChild(wrap);
+    } else {
+      b.textContent = z.label;
+    }
+    b.addEventListener('click', function(){
+      useGMT = z.gmt;
+      customActive = false;
+      if (!z.gmt) currentOffset = z.off;
+      try { localStorage.setItem('clockOffset', z.gmt ? 'gmt' : z.off); } catch(e) {}
+      setActive(i);
+      customBtn.textContent = '▾';
+      tick(); drawMap(); closeDD();
+    });
+    zonesEl.appendChild(b);
+    btns.push(b);
+  });
+
+  var customBtn = document.createElement('button');
+  customBtn.textContent = '▾';
+  customBtn.style.cssText = BTN;
+  zonesEl.appendChild(customBtn);
+  btns.push(customBtn);
+  var customIdx = btns.length - 1;
+
+  var dd = null;
+  function closeDD() {
+    if (dd) { try { dd.parentNode.removeChild(dd); } catch(e) {} dd = null; }
+  }
+
+  function offLabel(o) {
+    if (o === 0) return 'GMT ±0';
+    return o > 0 ? 'GMT +' + o : 'GMT −' + Math.abs(o);
+  }
+  function offShort(o) {
+    if (o === 0) return '±0 ▾';
+    return (o > 0 ? '+' : '−') + Math.abs(o) + ' ▾';
+  }
+
+  function openDD() {
+    closeDD();
+    var rect = customBtn.getBoundingClientRect();
+    dd = document.createElement('div');
+    dd.id = 'tz-dd';
+    dd.style.cssText = [
+      'position:fixed;z-index:9999',
+      'left:' + Math.round(rect.left) + 'px',
+      'top:'  + Math.round(rect.bottom + 6) + 'px',
+      'background:#252320',
+      'border:1px solid rgba(255,255,255,.14)',
+      'border-radius:10px',
+      'padding:4px 0',
+      'max-height:200px',
+      'overflow-y:auto',
+      'width:108px',
+      'box-shadow:0 10px 32px rgba(0,0,0,.85)',
+    ].join(';');
+
+    if (!document.getElementById('tz-dd-style')) {
+      var ss = document.createElement('style');
+      ss.id = 'tz-dd-style';
+      ss.textContent = '#tz-dd::-webkit-scrollbar{width:3px}#tz-dd::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:2px}';
+      document.head.appendChild(ss);
+    }
+
+    for (var o = -12; o <= 14; o++) {
+      (function(off){
+        var item = document.createElement('div');
+        item.textContent = offLabel(off);
+        var isSel = customActive && currentOffset === off;
+        item.style.cssText = 'padding:5px 12px;cursor:pointer;font-size:12px;color:' + (isSel?'#f1efec':'#9a9896') + ';background:' + (isSel?'rgba(255,255,255,.07)':'transparent') + ';white-space:nowrap;';
+        item.addEventListener('mouseenter', function(){ this.style.background='rgba(255,255,255,.07)'; this.style.color='#f1efec'; });
+        item.addEventListener('mouseleave', function(){ this.style.background=isSel?'rgba(255,255,255,.07)':'transparent'; this.style.color=isSel?'#f1efec':'#9a9896'; });
+        item.addEventListener('click', function(e){
+          e.stopPropagation();
+          useGMT = false; currentOffset = off; customActive = true;
+          try { localStorage.setItem('clockOffset', off); } catch(e2) {}
+          setActive(customIdx);
+          customBtn.textContent = offShort(off);
+          tick(); drawMap(); closeDD();
+        });
+        dd.appendChild(item);
+      })(o);
+    }
+    document.body.appendChild(dd);
+  }
+
+  customBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    if (dd) { closeDD(); return; }
+    openDD();
+  });
+  document.addEventListener('click', closeDD);
+
+  // ── World map ─────────────────────────────────────────────────────
+  var MW = 620, MH = 190;
+  var LAT_TOP = 72, LAT_BOT = -38;
+
+  var mapEl = document.createElement('canvas');
+  mapEl.width = MW; mapEl.height = MH;
+  mapEl.style.cssText = 'display:block;width:310px;height:95px;border-radius:6px;';
+  document.getElementById('inner').appendChild(mapEl);
+
+  var LANDS = [
+    // North America
+    [[-168,72],[-168,54],[-158,56],[-148,60],[-136,58],
+     [-124,49],[-122,37],[-118,34],[-117,32],
+     [-110,23],[-104,22],[-96,16],[-86,14],[-80,9],
+     [-77,11],[-87,16],[-90,21],
+     [-96,22],[-94,30],[-90,30],[-82,25],[-80,32],
+     [-76,35],[-74,40],[-70,43],[-67,47],
+     [-60,47],[-54,47],[-56,52],[-64,58],
+     [-80,73],[-95,74],[-120,72],[-140,70],[-168,72]],
+    // Greenland
+    [[-52,78],[-18,78],[-16,76],[-22,72],[-34,70],[-50,70],[-58,74],[-52,78]],
+    // South America
+    [[-78,8],[-72,12],[-62,12],[-60,8],[-52,4],[-50,0],
+     [-48,-2],[-36,-4],[-36,-10],[-40,-20],[-43,-23],
+     [-48,-28],[-52,-34],[-57,-38],[-66,-55],
+     [-72,-50],[-76,-38],[-76,-26],[-78,-16],[-78,0],[-78,8]],
+    // Europe (mainland + Scandinavia)
+    [[-9,37],[-5,36],[-2,36],[0,38],[3,43],[5,43],[8,44],
+     [14,44],[14,42],[16,38],[18,40],[22,38],[26,38],
+     [28,40],[20,54],[14,56],[8,58],[4,56],
+     [2,52],[-2,50],[-4,52],[-8,54],[-8,58],[-4,56],
+     [0,52],[-6,48],[-8,44],[-9,40],[-9,37]],
+    // Scandinavia
+    [[4,56],[8,58],[14,56],[18,58],[20,56],[24,58],[28,68],
+     [22,70],[18,72],[12,64],[6,58],[4,56]],
+    // UK + Ireland
+    [[-6,50],[-2,50],[0,52],[0,54],[-2,56],[-4,58],[-6,58],[-8,56],[-6,52],[-6,50]],
+    // Russia (W block — bridges Europe to Siberia)
+    [[28,42],[36,36],[40,38],[44,42],[50,44],[56,44],
+     [60,50],[60,70],[42,68],[28,68],[28,56],[32,47],[28,42]],
+    // Siberia + Central Asia
+    [[60,50],[60,70],[80,74],[100,72],[120,72],[136,68],[140,68],
+     [140,60],[140,54],[136,46],[130,42],[126,50],[122,46],[120,38],
+     [122,32],[120,24],[116,22],[110,20],[108,10],[106,0],[100,4],
+     [96,16],[92,22],[90,24],[88,26],[80,26],[76,28],[72,24],[68,24],
+     [62,24],[60,22],[56,24],[50,26],[46,28],[42,26],[40,28],
+     [36,28],[36,36],[40,38],[44,42],[50,44],[56,44],[60,50]],
+    // India subcontinent
+    [[68,24],[72,22],[74,18],[76,10],[80,8],[82,14],[80,18],
+     [80,22],[86,22],[90,24],[88,26],[80,26],[76,28],[72,24],[68,24]],
+    // Arabia
+    [[36,28],[36,14],[42,12],[50,12],[58,8],[60,16],[60,22],
+     [56,24],[50,26],[46,28],[42,26],[40,28],[36,28]],
+    // SE Asia (Indochina)
+    [[100,4],[104,2],[106,0],[108,4],[110,16],[116,22],
+     [110,20],[108,10],[100,4]],
+    // Africa
+    [[-6,36],[0,38],[10,37],[20,34],[32,30],[36,22],
+     [42,12],[50,12],[44,-12],[36,-20],[36,-26],
+     [28,-34],[18,-34],[16,-26],[12,-18],[8,-4],[4,4],
+     [-8,4],[-16,14],[-18,18],[-14,30],[-10,36],[-6,36]],
+    // Madagascar
+    [[44,-12],[46,-16],[48,-20],[48,-24],[46,-26],[44,-24],[42,-20],[42,-16],[44,-12]],
+    // Australia
+    [[114,-22],[118,-20],[122,-18],[128,-14],[136,-12],
+     [140,-16],[142,-18],[144,-22],[142,-28],
+     [148,-30],[152,-34],[152,-38],[148,-38],
+     [140,-38],[136,-36],[130,-32],[126,-34],[120,-34],[116,-32],[114,-26],[114,-22]],
+    // Japan (Honshu)
+    [[130,34],[133,33],[135,32],[137,31],[138,33],[140,35],
+     [141,38],[141,40],[140,42],[138,40],[135,36],[132,34],[130,34]],
+    // New Zealand
+    [[172,-34],[174,-38],[174,-42],[172,-44],[170,-46],[168,-44],[170,-40],[172,-36],[172,-34]],
+  ];
+
+  function llXY(lon, lat) {
+    return [(lon+180)/360*MW, (LAT_TOP-lat)/(LAT_TOP-LAT_BOT)*MH];
+  }
+  function latToY(lat) {
+    return (LAT_TOP-lat)/(LAT_TOP-LAT_BOT)*MH;
+  }
+  function ptInPoly(lon, lat, poly) {
+    var inside = false;
+    for (var i=0, j=poly.length-1; i<poly.length; j=i++) {
+      var xi=poly[i][0], yi=poly[i][1], xj=poly[j][0], yj=poly[j][1];
+      if (((yi>lat)!==(yj>lat)) && lon < (xj-xi)*(lat-yi)/(yj-yi)+xi) inside=!inside;
+    }
+    return inside;
+  }
+
+  function drawMap() {
+    var ctx = mapEl.getContext('2d');
+    ctx.fillStyle = '#000'; ctx.fillRect(0,0,MW,MH);
+
+    // Dot grid — test each grid point against land polygons
+    var STEP = 8, DOT_R = 2.6;
+    ctx.fillStyle = '#3a3836';
+    for (var py=STEP/2; py<MH; py+=STEP) {
+      var lat = LAT_TOP - (py/MH)*(LAT_TOP-LAT_BOT);
+      for (var px2=STEP/2; px2<MW; px2+=STEP) {
+        var lon = (px2/MW)*360-180;
+        for (var k=0; k<LANDS.length; k++) {
+          if (ptInPoly(lon, lat, LANDS[k])) {
+            ctx.beginPath(); ctx.arc(px2, py, DOT_R, 0, 2*Math.PI); ctx.fill();
+            break;
+          }
+        }
+      }
+    }
+
+    var t    = new Date(nowUTC());
+    var utcH = t.getUTCHours()+t.getUTCMinutes()/60+t.getUTCSeconds()/3600;
+    var doy  = Math.round((nowUTC()-Date.UTC(t.getUTCFullYear(),0,1))/86400000);
+    var decl = -23.45*Math.cos(2*Math.PI*(doy+10)/365)*Math.PI/180;
+    var sunLon = (12-utcH)*15;
+
+    var termY = [];
+    for (var px=0; px<=MW; px++) {
+      var lon2=(px/MW)*360-180;
+      var H=(lon2-sunLon)*Math.PI/180;
+      var tanD=Math.tan(decl); if(Math.abs(tanD)<1e-6) tanD=(decl>=0?1:-1)*1e-6;
+      var tLat=Math.atan(-Math.cos(H)/tanD)*180/Math.PI;
+      termY.push(latToY(tLat));
+    }
+
+    ctx.save();
+    ctx.beginPath(); ctx.moveTo(0, termY[0]);
+    for (var i=0; i<=MW; i++) ctx.lineTo(i, termY[i]);
+    if (decl >= 0) { ctx.lineTo(MW, MH); ctx.lineTo(0, MH); }
+    else            { ctx.lineTo(MW, 0);  ctx.lineTo(0, 0);  }
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,0,0,0.52)'; ctx.fill();
+
+    ctx.beginPath(); ctx.moveTo(0, termY[0]);
+    for (var i=1; i<=MW; i++) ctx.lineTo(i, termY[i]);
+    ctx.strokeStyle = 'rgba(220,220,220,0.22)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.restore();
+
+    var tzX = (offset()*15 + 180) / 360 * MW;
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,255,255,0.5)'; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.moveTo(tzX,0); ctx.lineTo(tzX,MH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(tzX, MH/2, 5, 0, 2*Math.PI);
+    ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.restore();
+  }
+
+  // ── Active pill state ─────────────────────────────────────────────
+  (function(){
+    var saved; try { saved = localStorage.getItem('clockOffset'); } catch(e) {}
+    if (saved === 'gmt') { btns[1].style.cssText = BTNON; return; }
+    var n = parseFloat(saved);
+    if (!isNaN(n)) {
+      var found = false;
+      for (var i=0; i<zones.length; i++) {
+        if (!zones[i].gmt && zones[i].off === n) { btns[i].style.cssText = BTNON; found = true; break; }
+      }
+      if (!found) {
+        customActive = true;
+        customBtn.textContent = offShort(n);
+        btns[customIdx].style.cssText = BTNON;
+      }
+      return;
+    }
+    btns[2].style.cssText = BTNON; // default +8
+  })();
+
+  // ── Flip animation ────────────────────────────────────────────────
+  function flipDigit(prefix, newVal) {
+    var u   = document.getElementById(prefix+'-u');
+    var l   = document.getElementById(prefix+'-l');
+    var ft  = document.getElementById(prefix+'-ft');
+    var ftt = document.getElementById(prefix+'-ft-t');
+    var fb  = document.getElementById(prefix+'-fb');
+    var fbt = document.getElementById(prefix+'-fb-t');
+
+    var oldVal = u.textContent;
+
+    // First call: initialise all panels with no animation
+    if (!oldVal) {
+      u.textContent = newVal;
+      l.textContent = newVal;
+      ftt.textContent = newVal;
+      fbt.textContent = newVal;
+      ft.style.transform = 'rotateX(-90deg)'; // hidden after init
+      fb.style.transform = 'rotateX(0deg)';   // hidden after init (same as lower)
+      return;
+    }
+
+    if (oldVal === newVal) return;
+
+    // Load text into flaps
+    ftt.textContent = oldVal; // top flap shows what's currently visible
+    fbt.textContent = newVal; // bottom flap shows incoming digit
+
+    // Upper immediately shows new digit
+    u.textContent = newVal;
+
+    // Reset flap transforms instantly (no transition)
+    ft.style.transition = 'none';
+    fb.style.transition = 'none';
+    ft.style.animation  = 'none';
+    fb.style.animation  = 'none';
+    ft.style.transform  = 'rotateX(0deg)';
+    ft.style.filter     = 'brightness(1)';
+    fb.style.transform  = 'rotateX(90deg)';
+    fb.style.filter     = 'brightness(0.25)';
+
+    // Force reflow so the reset is applied before animation starts
+    ft.offsetHeight;
+    fb.offsetHeight;
+
+    // Kick off animations — top falls with gravity (accelerates), bottom settles (decelerates)
+    ft.style.animation = 'fTop 0.32s cubic-bezier(0.4,0,1,0.6) forwards';
+    fb.style.animation = 'fBot 0.34s cubic-bezier(0,0.4,0.6,1) 0.22s forwards';
+
+    // Update lower half once the bottom flap has fully unfolded
+    setTimeout(function(){ l.textContent = newVal; }, 600);
+  }
+
+  // ── Clock tick ────────────────────────────────────────────────────
+  function pad(n){ return (n<10?'0':'')+n; }
+  var prevMin = -1;
+
+  function tick() {
+    var off = offset();
+    var t   = new Date(nowUTC() + off*3600000);
+    var h   = t.getUTCHours(), m = t.getUTCMinutes();
+    flipDigit('hh', pad(h));
+    flipDigit('mm', pad(m));
+    document.getElementById('date').textContent =
+      WEEK[t.getUTCDay()] + ' | ' + MON[t.getUTCMonth()] + ' ' + t.getUTCDate() + ', ' + t.getUTCFullYear();
+    var dstEl = document.getElementById('dst-lbl');
+    if (dstEl) dstEl.textContent = ukOffset() === 1 ? 'BST +1' : '';
+    if (m !== prevMin) { prevMin = m; drawMap(); }
+  }
+
+  tick();
+  setInterval(tick, 1000);
+  drawMap();
+})();
+</script>
+</body>
+</html>
+
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
