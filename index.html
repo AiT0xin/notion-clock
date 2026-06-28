@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Clock</title>
 </head>
-<body style="margin:0;padding:0;width:100%;height:100vh;background:#1b1a19;overflow:hidden;position:relative;">
+<body style="margin:0;padding:0;width:100%;height:100vh;background:#1b1a19;overflow:hidden;display:flex;align-items:center;justify-content:center;">
 
-<div id="inner" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px;">
+<div id="inner" style="display:flex;flex-direction:column;align-items:center;gap:9px;transform-origin:center center;">
 
   <div style="display:flex;align-items:center;gap:10px;">
 
@@ -73,6 +73,7 @@
 
 <script>
 (function(){
+  if (window.__clockInit) return; window.__clockInit = true;
   // Inject flip keyframes
   (function(){
     var s = document.createElement('style');
@@ -84,16 +85,17 @@
 
   var WEEK = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   var MON  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var flipTimers = {};
 
   function rescale() {
     var el = document.getElementById('inner');
-    el.style.transform = 'translate(-50%,-50%)';
+    el.style.transform = 'none';
     var nw = el.offsetWidth, nh = el.offsetHeight;
     var vw = window.innerWidth, vh = window.innerHeight;
     if (!nw || !nh || !vw || !vh) return;
     var pad = 24;
     var s = Math.min((vw - pad) / nw, (vh - pad) / nh);
-    el.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+    el.style.transform = 'scale(' + s + ')';
   }
   window.addEventListener('resize', rescale);
   // Fire multiple times — Notion iframes often report wrong viewport on first load
@@ -131,7 +133,7 @@
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) syncOnce(); });
 
   function ukOffset() {
-    var now = new Date(), yr = now.getUTCFullYear();
+    var now = new Date(nowUTC()), yr = now.getUTCFullYear();
     function lastSun(m) { var d=new Date(Date.UTC(yr,m+1,0)); d.setUTCDate(d.getUTCDate()-d.getUTCDay()); return d; }
     var s = lastSun(2); s.setUTCHours(1);
     var e = lastSun(9); e.setUTCHours(1);
@@ -283,7 +285,7 @@
 
   var mapEl = document.createElement('canvas');
   mapEl.width = MW; mapEl.height = MH;
-  mapEl.style.cssText = 'display:block;width:310px;height:95px;border-radius:6px;';
+  mapEl.style.cssText = 'display:block;width:282px;height:87px;border-radius:6px;';
   document.getElementById('inner').appendChild(mapEl);
 
   var LANDS = [
@@ -367,29 +369,38 @@
     return inside;
   }
 
-  function drawMap() {
-    var ctx = mapEl.getContext('2d');
-    ctx.fillStyle = '#000'; ctx.fillRect(0,0,MW,MH);
-
-    // Dot grid — test each grid point against land polygons
+  // Pre-render static land dots once (LANDS and ptInPoly are now defined)
+  var landCanvas = document.createElement('canvas');
+  landCanvas.width = MW; landCanvas.height = MH;
+  (function(){
+    var lctx = landCanvas.getContext('2d');
+    lctx.fillStyle = '#000'; lctx.fillRect(0,0,MW,MH);
     var STEP = 8, DOT_R = 2.6;
-    ctx.fillStyle = '#3a3836';
+    lctx.fillStyle = '#3a3836';
     for (var py=STEP/2; py<MH; py+=STEP) {
       var lat = LAT_TOP - (py/MH)*(LAT_TOP-LAT_BOT);
       for (var px2=STEP/2; px2<MW; px2+=STEP) {
         var lon = (px2/MW)*360-180;
         for (var k=0; k<LANDS.length; k++) {
           if (ptInPoly(lon, lat, LANDS[k])) {
-            ctx.beginPath(); ctx.arc(px2, py, DOT_R, 0, 2*Math.PI); ctx.fill();
+            lctx.beginPath(); lctx.arc(px2, py, DOT_R, 0, 2*Math.PI); lctx.fill();
             break;
           }
         }
       }
     }
+  })();
+
+  function drawMap() {
+    var ctx = mapEl.getContext('2d');
+    ctx.fillStyle = '#000'; ctx.fillRect(0,0,MW,MH);
+
+    // Blit pre-rendered static land dots
+    ctx.drawImage(landCanvas, 0, 0);
 
     var t    = new Date(nowUTC());
     var utcH = t.getUTCHours()+t.getUTCMinutes()/60+t.getUTCSeconds()/3600;
-    var doy  = Math.round((nowUTC()-Date.UTC(t.getUTCFullYear(),0,1))/86400000);
+    var doy  = Math.floor((nowUTC()-Date.UTC(t.getUTCFullYear(),0,1))/86400000);
     var decl = -23.45*Math.cos(2*Math.PI*(doy+10)/365)*Math.PI/180;
     var sunLon = (12-utcH)*15;
 
@@ -495,7 +506,8 @@
     fb.style.animation = 'fBot 0.34s cubic-bezier(0,0.4,0.6,1) 0.22s forwards';
 
     // Update lower half once the bottom flap has fully unfolded
-    setTimeout(function(){ l.textContent = newVal; }, 600);
+    clearTimeout(flipTimers[prefix]);
+    flipTimers[prefix] = setTimeout(function(){ l.textContent = newVal; }, 600);
   }
 
   // ── Clock tick ────────────────────────────────────────────────────
